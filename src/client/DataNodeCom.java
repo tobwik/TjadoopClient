@@ -9,7 +9,7 @@ import java.util.ArrayList;
 public class DataNodeCom {
 
 	public static boolean upload(DataOutputStream out, String file,
-			long filesize, int[] ids, long[] starts, long[] ends)
+			long filesize, int[] ids, long[] starts, long[] ends, int hash)
 			throws FileNotFoundException, IOException {
 
 		ArrayList<byte[]> sendBytes = null;
@@ -27,6 +27,7 @@ public class DataNodeCom {
 			//Send load to data node
 
 			out.write(type);
+			out.write(hash);
 			out.write(ids[k]);
 			out.writeLong(starts[k]);
 			out.writeLong(ends[k]);
@@ -63,16 +64,15 @@ public class DataNodeCom {
 		long end = 0;
 		long filesize = 0;
 		boolean first = true;
-
-		type = in.readByte();
-
-		if (type != 1)
-			return false;
-
-		filesize = in.readLong();
+		int hash = 0;
 
 		while (true) {
 
+			type = in.readByte();
+			if (type != 1)
+				return false;
+			hash = in.readInt();
+			filesize = in.readLong();
 			start = in.readLong();
 			end = in.readLong();
 			byte[] receivedBytes = new byte[(int) (end - start)];

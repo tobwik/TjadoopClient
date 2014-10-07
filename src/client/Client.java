@@ -200,6 +200,7 @@ public class Client {
 
 		String slaveAddr = "";
 		int slavePort = -1;
+		int hash = -1;
 
 		slaveAddr = (String) json.get("ip");
 		slavePort = (int) json.get("port");
@@ -284,12 +285,13 @@ public class Client {
 		int[] ids = (int[]) json.get("idArray");
 		long[] starts = (long[]) json.get("startArray");
 		long[] ends = (long[]) json.get("endArray");
+		int hash = (int) json.get("hash");
 
 		/* Communication with slave */
 
 		openConnection(slaveAddr, slavePort);
 
-		if (!DataNodeCom.upload(out, file, filesize, ids, starts, ends)) {
+		if (!DataNodeCom.upload(out, file, filesize, ids, starts, ends, hash)) {
 			System.err.println("Failed to upload.");
 			return false;
 		}
@@ -306,6 +308,8 @@ public class Client {
 	private boolean makeDirectory(String dir) throws IOException,
 			ClassNotFoundException {
 		openConnection(master, connectionPort);
+
+		/* form: /tobbe/skumpa , inte /tobbe/skumpa/ */// TODO fixa parser för detta
 
 		if (!MasterNodeCom.sendRequest(Request.MKDIR, socket, out, dir, 0))
 			return false;
