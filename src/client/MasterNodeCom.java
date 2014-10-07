@@ -114,7 +114,7 @@ public class MasterNodeCom {
 			String filePath) {
 		try {
 			JSONObject json = new JSONObject();
-			json.put("cmd", "delfile");
+			json.put("cmd", "rmfile");
 			json.put("path", filePath);
 
 			out.writeBytes(json.toString() + '\n');
