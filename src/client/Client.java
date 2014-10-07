@@ -208,7 +208,7 @@ public class Client {
 
 		openConnection(slaveAddr, slavePort);
 
-		if (!DataNodeCom.download(in)) {
+		if (!DataNodeCom.download(in, fileName)) {
 			System.err.println("Failed to download.");
 			return null;
 		}

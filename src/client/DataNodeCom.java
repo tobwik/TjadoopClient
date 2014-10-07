@@ -52,10 +52,10 @@ public class DataNodeCom {
 
 	}
 
-	public static boolean download(DataInputStream in)
+	public static boolean download(DataInputStream in, String fileName)
 			throws FileNotFoundException, IOException {
 
-		ArrayList<byte[]> sendBytes = null;
+		//ArrayList<byte[]> sendBytes = null;
 
 		long dataBytes = 0;
 		byte type = 0;
@@ -64,43 +64,33 @@ public class DataNodeCom {
 		long filesize = 0;
 		boolean first = true;
 
+		type = in.readByte();
+
+		if (type != 1)
+			return false;
+
+		filesize = in.readLong();
+
 		while (true) {
 
-			//			sendBytes = FileHandler.getBytes(file, 1, starts[k], ends[k]
-			//					- starts[k]);
-
-			//Send load to data node
-
-			type = in.readByte();
 			start = in.readLong();
 			end = in.readLong();
-			filesize = in.readLong();
 			byte[] receivedBytes = new byte[(int) (end - start)];
 
-			//for (long i = start; i < end; i++) {
-
 			dataBytes += in.read(receivedBytes);
-		
-			if (first)
-				FileHandler.createPartitionFile(fileName, index, bytes)
-			else {
-				
-			}
-			//}
 
-			if (k == ids.length - 1) {
-				if (dataBytes == filesize) {
-					System.out.println("Upload complete");
-					return true;
-				} else {
-					System.err.println("Upload didn't finish!");
-					return false;
-				}
+			if (first)
+				FileHandler.createFile(fileName, receivedBytes);
+			else {
+				FileHandler.join(fileName, receivedBytes);
+			}
+
+			// DETTA ÄR FULT SÅ IN I HELVETE, SÅ TODO 
+			if (dataBytes == filesize) {
+				return true;
 			}
 
 		}
-
-		return false;
 
 	}
 }

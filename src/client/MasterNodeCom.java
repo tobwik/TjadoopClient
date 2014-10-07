@@ -99,7 +99,7 @@ public class MasterNodeCom {
 			String filePath) {
 		try {
 			JSONObject json = new JSONObject();
-			json.put("cmd", "read");
+			json.put("cmd", "download");
 			json.put("path", filePath);
 
 			out.writeBytes(json.toString() + '\n');

@@ -168,6 +168,23 @@ public class FileHandler {
 	}
 
 	/**
+	 * Create a chunk file from byte array.
+	 * @param fileName
+	 * @param bytes
+	 * @throws IOException
+	 */
+	public static void createFile(String fileName, byte[] bytes)
+			throws IOException {
+
+		BufferedOutputStream out = new BufferedOutputStream(
+				new FileOutputStream(fileName));
+		for (int i = 0; i < bytes.length; i++) {
+			out.write(bytes[i]);
+		}
+		out.close();
+	}
+
+	/**
 	 * Join files. (If RAM space gets overloaded, then create the partitioned files and join them instead)
 	 * @param baseFilename
 	 * @throws IOException
@@ -208,6 +225,23 @@ public class FileHandler {
 			}
 
 		}
+		out.close();
+	}
+
+	/**
+	 * Join bytes from array to marge into existing file.
+	 * @param filename
+	 * @param bytes
+	 * @throws IOException
+	 */
+	public static void join(String filename, byte[] bytes) throws IOException {
+
+		BufferedOutputStream out = new BufferedOutputStream(
+				new FileOutputStream(filename));
+		for (int b = 0; b < bytes.length; b++) {
+			out.write(bytes[b]);
+		}
+
 		out.close();
 	}
 
