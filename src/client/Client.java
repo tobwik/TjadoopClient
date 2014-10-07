@@ -10,14 +10,16 @@ import java.util.Scanner;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import client.MasterNodeCom.Request;
-
 /**
  * Tjadoop client
  *  upload big.mkv 100000000
  */
 
 public class Client {
+
+	public enum Request {
+		LS, RMDIR, MKDIR, DELETE, UPLOAD, DOWNLOAD
+	}
 
 	private static int connectionPort = 8989;
 	Socket socket = null;
@@ -91,11 +93,16 @@ public class Client {
 		socket.close();
 	}
 
-	private void openConnection(String address) throws IOException {
+	private void openConnection(String address, int port) throws IOException {
 		closeConnection();
 
+		if (port == -1) {
+			System.err.println("Failed to open connection, no valid port.");
+			return;
+		}
+
 		try {
-			socket = new Socket(address, connectionPort);
+			socket = new Socket(address, port);
 			out = new DataOutputStream(socket.getOutputStream());
 			in = new DataInputStream(socket.getInputStream());
 		} catch (UnknownHostException e) {
@@ -190,17 +197,31 @@ public class Client {
 					.println("Failed to download file, master does not approve");
 			return null;
 		}
-		String slaveAddr = (String) json.get("id");
-		long fileSize = (long) json.get("size");
-		Map<Integer, ByteTuple> blockMap = new HashMap<Integer, ByteTuple>();
 
-		JSONArray jsonArray = (JSONArray) json.get("map");
+		String slaveAddr = "";
+		int slavePort = -1;
 
-		for (int i = 0; i < jsonArray.size(); i++) {
-			JSONObject o = (JSONObject) jsonArray.get(i);
-			blockMap.put((Integer) o.get("key"),
-					new ByteTuple((long) o.get("start"), (long) o.get("end")));
+		slaveAddr = (String) json.get("ip");
+		slavePort = (int) json.get("port");
+
+		/* Communication with slave */
+
+		openConnection(slaveAddr, slavePort);
+
+		if (!DataNodeCom.download(in)) {
+			System.err.println("Failed to download.");
+			return null;
 		}
+
+		//Map<Integer, ByteTuple> blockMap = new HashMap<Integer, ByteTuple>();
+
+		//JSONArray jsonArray = (JSONArray) json.get("map");
+
+		//		for (int i = 0; i < jsonArray.size(); i++) {
+		//			JSONObject o = (JSONObject) jsonArray.get(i);
+		//			blockMap.put((Integer) o.get("key"),
+		//					new ByteTuple((long) o.get("start"), (long) o.get("end")));
+		//		}
 
 		/* Communication with slave */
 
@@ -238,110 +259,53 @@ public class Client {
 	 */
 	private boolean uploadFile(String[] input) throws IOException,
 			ClassNotFoundException {
-		//		Says where it wants to upload to the master, name, total size
-		//
-		//		Receiver True/false, and if true, a Map[id, (byte start, byte end)]
-		//		id is data node id. So the list contains information on where each block should be stored.
-		//
-		//		Get redirected to a data node, sends how much duplication (n st) you want.
-		//
-		//		//Master tells client how many blocks the data should be divided in.
-		//
-		//		Client divides the data into blocks.
-		//
-		//		Then the master redirects the client to n data nodes, and it should also tell the client which blocks it should upload on to the data node.
-		//
-		//		Start uploading.
-		//
-		//		Done!
-		boolean test = true;
+
 		System.out.println("Uploading file...");
 
 		String file = parseFilePath(input);
 
-		/* Communication with master */
-		int chunksize = 0;
+		/* - Communication with master - */
 		String slaveAddr = "";
+		int slavePort = -1;
 		long filesize = new File(file).length();
 
 		if (!MasterNodeCom.sendRequest(Request.UPLOAD, socket, out, file,
 				filesize))
 			return false;
 
-		//		if (!test) {
-		//			openConnection(master);
-		//
-		//			new Packet(Packet.UPLOAD, file).writeOut(out);
-		//
-		//			int count = 3; //Wait for 4 packets from master
-		//			while (count > 0) {
-		//
-		//				Packet p = (Packet.readIn(in));
-		//				int packetType = p.getPacketType();
-		//
-		//				switch (packetType) {
-		//				case (Packet.CMD_OK):
-		//					count--;
-		//					System.out.println("Upload starting...");
-		//					break;
-		//				case (Packet.CMD_NOK):
-		//					//TODO
-		//					System.out.println("File doesn't exist");
-		//					count = -1;
-		//					break;
-		//				case (Packet.CHUNK_SIZE):
-		//					//TODO
-		//					chunksize = p.getIntData();
-		//					System.out.println("Chunk size: " + chunksize);
-		//					count--;
-		//					break;
-		//				case (Packet.SLAVE_ADDR):
-		//					//TODO
-		//					slaveAddr = p.getStrData();
-		//					System.out.println("Slave address: " + slaveAddr);
-		//					count--;
-		//					break;
-		//				}
-		//			}
-		//
-		//			if (count == -1)
-		//				return false;
-		//
-		//			/* Communication with slave */
-		//
-		//			openConnection(slaveAddr);
-		//		}
+		/* Master response */
+		JSONObject json = MasterNodeCom.getResponse(in);
 
-		ArrayList<byte[]> bytes = null;
+		if (!(boolean) json.get("ok"))
+			return false;
 
-		long readBytes = 0;
-		int i = 0;
-		chunksize = Integer.parseInt(input[input.length - 1]); //TODO denna är bara för testning, ta bort
-		while (readBytes < filesize) {
+		slaveAddr = (String) json.get("ip");
+		slavePort = (int) json.get("port");
+		int[] ids = (int[]) json.get("idArray");
+		long[] starts = (long[]) json.get("startArray");
+		long[] ends = (long[]) json.get("endArray");
 
-			bytes = FileHandler.getBytes(file, 1, readBytes, chunksize);
-			for (byte[] ba : bytes) {
-				readBytes += ba.length;
-				//read bytes here (send somewhere for example)
-			}
-			System.out.println("Created " + bytes.size()
-					+ " chunks. Chunk size "
-					+ bytes.get(bytes.size() - 1).length + ".");
-			FileHandler.createPartitionFile("apa", i, bytes.get(0));
-			i++;
+		/* Communication with slave */
+
+		openConnection(slaveAddr, slavePort);
+
+		if (!DataNodeCom.upload(out, file, filesize, ids, starts, ends)) {
+			System.err.println("Failed to upload.");
+			return false;
 		}
+
+		System.out.println("Uploaded file.");
 
 		//TODO send file size and receive partition size from server
 		// then split file
 		// then send files to specified location (received ip from server)
 		//för att inte ta upp för mycket RAM när jag splittar så bör jag 
-		System.out.println("Uploaded file.");
 		return true;
 	}
 
 	private boolean makeDirectory(String dir) throws IOException,
 			ClassNotFoundException {
-		openConnection(master);
+		openConnection(master, connectionPort);
 
 		if (!MasterNodeCom.sendRequest(Request.MKDIR, socket, out, dir, 0))
 			return false;
@@ -355,7 +319,7 @@ public class Client {
 
 	private boolean removeDirectory(String dir) throws IOException,
 			ClassNotFoundException {
-		openConnection(master);
+		openConnection(master, connectionPort);
 
 		if (!MasterNodeCom.sendRequest(Request.RMDIR, socket, out, dir, 0))
 			return false;
@@ -369,12 +333,12 @@ public class Client {
 
 	private String listDirectory(String dir) throws IOException,
 			ClassNotFoundException {
-		openConnection(master);
+		openConnection(master, connectionPort);
 		String ret = "";
 		//		new Packet(Packet.LS, dir).writeOut(out);
 
 		/* Master communication */
-		if (!MasterNodeCom.sendRequest(Request.LS, socket, out, null, 0))
+		if (!MasterNodeCom.sendRequest(Request.LS, socket, out, dir, 0))
 			return null;
 
 		JSONObject json = MasterNodeCom.getResponse(in);
@@ -390,7 +354,7 @@ public class Client {
 	}
 
 	private boolean deleteFile(String file) throws IOException {
-		openConnection(master);
+		openConnection(master, connectionPort);
 
 		if (!MasterNodeCom.sendRequest(Request.DELETE, socket, out, file, 0))
 			return false;

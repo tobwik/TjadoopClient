@@ -8,11 +8,9 @@ import java.net.Socket;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
-public class MasterNodeCom {
+import client.Client.Request;
 
-	public enum Request {
-		LS, RMDIR, MKDIR, DELETE, UPLOAD, DOWNLOAD
-	}
+public class MasterNodeCom {
 
 	/**
 	 * Send JSON request to master node
@@ -33,7 +31,7 @@ public class MasterNodeCom {
 
 		switch (request) {
 		case LS:
-			lsRequest(s, out);
+			lsRequest(s, out, path);
 			break;
 		case RMDIR:
 			removeDir(s, out, path);
@@ -85,8 +83,8 @@ public class MasterNodeCom {
 			String filePath, long filesize) {
 		try {
 			JSONObject json = new JSONObject();
-			json.put("upload", 1);
-			json.put("file", filePath);
+			json.put("cmd", "upload");
+			json.put("path", filePath);
 			json.put("size", filesize);
 
 			out.writeBytes(json.toString() + '\n');
@@ -101,8 +99,8 @@ public class MasterNodeCom {
 			String filePath) {
 		try {
 			JSONObject json = new JSONObject();
-			json.put("download", 1);
-			json.put("file", filePath);
+			json.put("cmd", "read");
+			json.put("path", filePath);
 
 			out.writeBytes(json.toString() + '\n');
 		} catch (Exception ex) {
@@ -116,8 +114,8 @@ public class MasterNodeCom {
 			String filePath) {
 		try {
 			JSONObject json = new JSONObject();
-			json.put("delete", 1);
-			json.put("file", filePath);
+			json.put("cmd", "delfile");
+			json.put("path", filePath);
 
 			out.writeBytes(json.toString() + '\n');
 		} catch (Exception ex) {
@@ -130,8 +128,8 @@ public class MasterNodeCom {
 	private static void makeDir(Socket s, DataOutputStream out, String dir) {
 		try {
 			JSONObject json = new JSONObject();
-			json.put("make", 1);
-			json.put("dir", dir);
+			json.put("cmd", "mkdir");
+			json.put("path", dir);
 
 			out.writeBytes(json.toString() + '\n');
 		} catch (Exception ex) {
@@ -145,8 +143,8 @@ public class MasterNodeCom {
 
 		try {
 			JSONObject json = new JSONObject();
-			json.put("remove", 1);
-			json.put("dir", dir);
+			json.put("cmd", "rmdir");
+			json.put("path", dir);
 
 			out.writeBytes(json.toString() + '\n');
 		} catch (Exception ex) {
@@ -155,11 +153,12 @@ public class MasterNodeCom {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static void lsRequest(Socket s, DataOutputStream out) {
+	private static void lsRequest(Socket s, DataOutputStream out, String path) {
 
 		try {
 			JSONObject json = new JSONObject();
-			json.put("ls", 1);
+			json.put("cmd", "ls");
+			json.put("path", path);
 
 			out.writeBytes(json.toString() + '\n');
 		} catch (Exception ex) {
