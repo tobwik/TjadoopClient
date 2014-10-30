@@ -236,10 +236,11 @@ public class FileHandler {
 	 */
 	public static void join(String filename, byte[] bytes) throws IOException {
 
-		BufferedOutputStream out = new BufferedOutputStream(
-				new FileOutputStream(filename));
+		File f = new File(filename);
+		PrintWriter out = new PrintWriter(new FileWriter(f, true));
+
 		for (int b = 0; b < bytes.length; b++) {
-			out.write(bytes[b]);
+			out.append((char) bytes[b]);
 		}
 
 		out.close();

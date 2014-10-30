@@ -1,8 +1,11 @@
 package client;
 
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 
 import org.json.simple.JSONObject;
@@ -57,22 +60,40 @@ public class MasterNodeCom {
 	 * Wait for JSON response from master node
 	 * @param in
 	 * @return
+	 * @throws UnsupportedEncodingException 
 	 */
-	public static JSONObject getResponse(DataInputStream in) {
+	public static JSONObject getResponse(DataInputStream in)
+			throws UnsupportedEncodingException {
+		BufferedReader streamReader = new BufferedReader(new InputStreamReader(
+				in, "UTF-8"));
 
 		if (in == null) {
 			System.err.println("No open input stream with master node.");
 			return null;
 		}
 
-		String s = "";
+		//StringBuilder responseBuilder = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
 		try {
-			s = in.readUTF();
+
+			// read until num left brackets == right brackets
+			int lb = 0;
+			int rb = 0;
+			do {
+				byte c = in.readByte();
+				sb.append((char) c);
+
+				if (c == '{')
+					lb++;
+				if (c == '}')
+					rb++;
+
+			} while (lb != rb);
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		JSONObject json = (JSONObject) JSONValue.parse(s);
+		JSONObject json = (JSONObject) JSONValue.parse(sb.toString());
 
 		return json;
 
@@ -84,10 +105,10 @@ public class MasterNodeCom {
 		try {
 			JSONObject json = new JSONObject();
 			json.put("cmd", "upload");
-			json.put("path", filePath);
+			json.put("path", "/" + filePath);
 			json.put("size", filesize);
 
-			out.writeBytes(json.toString() + '\n');
+			out.writeBytes(json.toString().replace("\\", "") + '\n');
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -100,9 +121,9 @@ public class MasterNodeCom {
 		try {
 			JSONObject json = new JSONObject();
 			json.put("cmd", "download");
-			json.put("path", filePath);
+			json.put("path", "/" + filePath);
 
-			out.writeBytes(json.toString() + '\n');
+			out.writeBytes(json.toString().replace("\\", "") + '\n');
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -115,9 +136,9 @@ public class MasterNodeCom {
 		try {
 			JSONObject json = new JSONObject();
 			json.put("cmd", "rmfile");
-			json.put("path", filePath);
+			json.put("path", "/" + filePath);
 
-			out.writeBytes(json.toString() + '\n');
+			out.writeBytes(json.toString().replace("\\", "") + '\n');
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -131,7 +152,7 @@ public class MasterNodeCom {
 			json.put("cmd", "mkdir");
 			json.put("path", dir);
 
-			out.writeBytes(json.toString() + '\n');
+			out.writeBytes(json.toString().replace("\\", "") + '\n');
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -146,7 +167,7 @@ public class MasterNodeCom {
 			json.put("cmd", "rmdir");
 			json.put("path", dir);
 
-			out.writeBytes(json.toString() + '\n');
+			out.writeBytes(json.toString().replace("\\", "") + '\n');
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -160,7 +181,9 @@ public class MasterNodeCom {
 			json.put("cmd", "ls");
 			json.put("path", path);
 
-			out.writeBytes(json.toString() + '\n');
+			System.out.println(json.toString().replace("\\", "") + "\n");
+
+			out.writeBytes(json.toString().replace("\\", "") + '\n');
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
