@@ -27,7 +27,7 @@ public class Client {
 
 	private static Socket socket = null;
 	public static DataOutputStream out = null;
-	public static DataInputStream in = null;
+	private static DataInputStream in = null;
 	private final String master;
 
 	public Client(String address) throws NumberFormatException, Exception {
@@ -336,7 +336,7 @@ public class Client {
 
 		//System.out.println("Slave address: " + slave1Address);
 
-		if (!DataNodeCom.upload(out, file, filesize, dataNodePartitions)) {
+		if (!DataNodeCom.upload(file, filesize, dataNodePartitions)) {
 			System.err.println("Failed to upload.");
 			return false;
 		}

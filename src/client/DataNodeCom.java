@@ -8,8 +8,8 @@ import java.util.ArrayList;
 
 public class DataNodeCom {
 
-	public static boolean upload(DataOutputStream out, String file,
-			long filesize, DataNodePartition[] dataNodePartitions)
+	public static boolean upload(String file, long filesize,
+			DataNodePartition[] dataNodePartitions)
 			throws FileNotFoundException, IOException {
 
 		ArrayList<byte[]> sendBytes = null;
@@ -38,15 +38,6 @@ public class DataNodeCom {
 
 			long[] starts = dataNodePartitions[p].starts;
 			long[] ends = dataNodePartitions[p].ends;
-
-			//			System.out.println("starts");
-			//			for (int i = 0; i < starts.length; i++) {
-			//				System.out.println(starts[i]);
-			//			}
-			//			System.out.println("Ends");
-			//			for (int i = 0; i < ends.length; i++) {
-			//				System.out.println(ends[i]);
-			//			}
 
 			Client.out.writeInt(starts.length);
 			System.out.println("Num nodes: " + starts.length);
@@ -116,7 +107,6 @@ public class DataNodeCom {
 			for (int i = 0; i < receivedBytes.length; i++) {
 				count++;
 				receivedBytes[i] = in.readByte();
-
 				//				System.out.println("Received byte: " + i);
 
 			}
@@ -126,7 +116,7 @@ public class DataNodeCom {
 				System.out.println("Byte count: " + count);
 				FileHandler.createFile("downloaded_" + file, receivedBytes);
 			} else {
-				System.out.println("Joining to file: " + receivedBytes);
+				System.out.println("Joining to file");
 				System.out.println("Byte count: " + count);
 				FileHandler.join("downloaded_" + file, receivedBytes);
 			}
